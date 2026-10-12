@@ -11,7 +11,10 @@ const APPS_SCRIPT_URL = process.env.APPS_SCRIPT_URL;
 // Permitir peticiones desde tu aplicación React.
 app.use(
   cors({
-    origin: "http://localhost:5173"
+    origin: [
+      "https://gamers-cloud.netlify.app",
+      "http://localhost:5173",
+    ],
   })
 );
 
