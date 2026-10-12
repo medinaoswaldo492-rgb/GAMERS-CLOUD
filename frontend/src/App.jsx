@@ -2,7 +2,9 @@
 import { useEffect, useMemo, useState } from "react";
 import "./App.css";
 
-const API_URL = "http://localhost:3000/api/videojuegos";
+
+const API_URL = "https://gamers-cloud.onrender.com/api/videojuegos";
+
 
 const formularioInicial = {
   nombre: "",
