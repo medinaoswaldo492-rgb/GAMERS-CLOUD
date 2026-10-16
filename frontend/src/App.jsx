@@ -30,6 +30,12 @@ function App() {
   const [errorAPI, setErrorAPI] = useState("");
   const [mensajeAPI, setMensajeAPI] = useState("");
 
+    // Estados del asistente de inteligencia artificial.
+  const [preguntaIA, setPreguntaIA] = useState("");
+  const [respuestaIA, setRespuestaIA] = useState("");
+  const [consultandoIA, setConsultandoIA] = useState(false);
+  const [errorIA, setErrorIA] = useState("");
+
   // Cargar videojuegos desde Google Sheets a través de Node.js.
   async function cargarJuegos() {
     setCargando(true);
@@ -82,6 +88,50 @@ function App() {
       setContrasena("");
     } else {
       setMensaje("Usuario o contraseña incorrectos.");
+    }
+  }
+
+    // Consultar al Asistente Cloud con IA.
+  async function consultarAsistente(e) {
+    e.preventDefault();
+
+    const pregunta = preguntaIA.trim();
+
+    if (!pregunta || consultandoIA) return;
+
+    setConsultandoIA(true);
+    setRespuestaIA("");
+    setErrorIA("");
+
+    try {
+      const respuesta = await fetch(
+        "https://gamers-cloud.onrender.com/api/asistente",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ pregunta }),
+        }
+      );
+
+      const resultado = await respuesta.json();
+
+      if (!respuesta.ok || !resultado.ok) {
+        throw new Error(
+          resultado.mensaje ||
+            "No se pudo obtener una respuesta del asistente."
+        );
+      }
+
+      setRespuestaIA(resultado.respuesta);
+    } catch (error) {
+      setErrorIA(
+        error.message ||
+          "No se pudo conectar con el asistente. Inténtalo nuevamente."
+      );
+    } finally {
+      setConsultandoIA(false);
     }
   }
 
@@ -365,6 +415,120 @@ function App() {
           </div>
         </article>
       </section>
+
+      
+      {/* ASISTENTE CLOUD CON IA */}
+      <section className="panel ai-panel">
+        <div className="panel-heading">
+          <div>
+            <p className="eyebrow">INTELIGENCIA ARTIFICIAL</p>
+            <h2>Asistente Cloud</h2>
+          </div>
+
+          <span className="heading-icon">🤖</span>
+        </div>
+
+        <p className="ai-description">
+          Tu asistente gamer está listo para ayudarte. Consulta
+          el catálogo, compara precios o pide recomendaciones
+          basadas en los videojuegos disponibles.
+        </p>
+
+        <form onSubmit={consultarAsistente} className="ai-form">
+          <label htmlFor="preguntaIA">
+            ¿Qué te gustaría saber?
+          </label>
+
+          <textarea
+            id="preguntaIA"
+            value={preguntaIA}
+            onChange={(e) => setPreguntaIA(e.target.value)}
+            placeholder="Ej. ¿Qué videojuegos de aventura tenemos por menos de $500?"
+            maxLength={500}
+            rows={3}
+            required
+            disabled={consultandoIA}
+          />
+
+          <div className="ai-form-footer">
+            <small>{preguntaIA.length}/500 caracteres</small>
+
+            <button
+              className="primary-button ai-button"
+              type="submit"
+              disabled={consultandoIA || !preguntaIA.trim()}
+            >
+              {consultandoIA
+                ? "CONSULTANDO..."
+                : "✦ PREGUNTAR A LA IA"}
+            </button>
+          </div>
+        </form>
+
+        <div className="ai-suggestions">
+          <span>Prueba preguntando:</span>
+
+          <button
+            type="button"
+            onClick={() =>
+              setPreguntaIA("¿Qué videojuegos tenemos disponibles?")
+            }
+            disabled={consultandoIA}
+          >
+            Ver catálogo
+          </button>
+
+          <button
+            type="button"
+            onClick={() =>
+              setPreguntaIA(
+                "¿Qué videojuegos cuestan menos de $500?"
+              )
+            }
+            disabled={consultandoIA}
+          >
+            Juegos económicos
+          </button>
+
+          <button
+            type="button"
+            onClick={() =>
+              setPreguntaIA(
+                "¿Qué videojuegos tienen más unidades en stock?"
+              )
+            }
+            disabled={consultandoIA}
+          >
+            Consultar stock
+          </button>
+        </div>
+
+        {consultandoIA && (
+          <div className="ai-status" role="status">
+            <span className="ai-loading-dot" />
+            Gemini está analizando tu pregunta...
+          </div>
+        )}
+
+        {errorIA && (
+          <div className="ai-error" role="alert">
+            <strong>No se pudo completar la consulta.</strong>
+            <p>{errorIA}</p>
+          </div>
+        )}
+
+        {respuestaIA && (
+          <div className="ai-answer" aria-live="polite">
+            <div className="ai-answer-heading">
+              <span>✨</span>
+              <h3>Respuesta del asistente</h3>
+            </div>
+
+            <p>{respuestaIA}</p>
+          </div>
+        )}
+      </section>
+
 
       <section className="content-grid">
         <article className="panel form-panel">
