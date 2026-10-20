@@ -3,7 +3,8 @@ import { useEffect, useMemo, useState } from "react";
 import "./App.css";
 
 
-const API_URL = "https://gamers-cloud.onrender.com/api/videojuegos";
+const API_URL = "/api/videojuegos";
+const CHAT_URL = "/api/chat";
 
 
 const formularioInicial = {
@@ -29,6 +30,11 @@ function App() {
   const [guardando, setGuardando] = useState(false);
   const [errorAPI, setErrorAPI] = useState("");
   const [mensajeAPI, setMensajeAPI] = useState("");
+
+  const [mensajesChat, setMensajesChat] = useState([]);
+  const [entradaChat, setEntradaChat] = useState("");
+  const [enviandoChat, setEnviandoChat] = useState(false);
+  const [errorChat, setErrorChat] = useState("");
 
   // Cargar videojuegos desde Google Sheets a través de Node.js.
   async function cargarJuegos() {
@@ -227,6 +233,71 @@ function App() {
     setFormulario(formularioInicial);
   }
 
+  
+async function enviarMensaje(e) {
+  e.preventDefault();
+
+  const pregunta = entradaChat.trim();
+
+  if (!pregunta || enviandoChat) return;
+
+  const historial = mensajesChat.map(({ role, content }) => ({
+    role,
+    content,
+  }));
+
+  setMensajesChat((anteriores) => [
+    ...anteriores,
+    { role: "user", content: pregunta },
+  ]);
+
+  setEntradaChat("");
+  setEnviandoChat(true);
+  setErrorChat("");
+
+  try {
+    const respuesta = await fetch(CHAT_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        pregunta,
+        historial,
+      }),
+    });
+
+    const resultado = await respuesta.json();
+
+    if (!respuesta.ok || !resultado.ok) {
+      throw new Error(
+        resultado.mensaje || "No se pudo obtener una respuesta."
+      );
+    }
+
+    setMensajesChat((anteriores) => [
+      ...anteriores,
+      {
+        role: "assistant",
+        content: resultado.respuesta,
+      },
+    ]);
+  } catch (error) {
+    setErrorChat(error.message);
+  } finally {
+    setEnviandoChat(false);
+  }
+}
+
+function nuevoChat() {
+  if (enviandoChat) return;
+
+  setMensajesChat([]);
+  setEntradaChat("");
+  setErrorChat("");
+}
+
+
   if (!sesion) {
     return (
       <main className="login-page">
@@ -365,6 +436,158 @@ function App() {
           </div>
         </article>
       </section>
+
+      
+<section className="chat-panel">
+  <div className="chat-header">
+    <div className="chat-brand">
+      <div className="chat-logo">✦</div>
+      <div>
+        <p className="eyebrow">INTELIGENCIA ARTIFICIAL</p>
+        <h2>GAMERS <span>AI</span></h2>
+        <p className="chat-status">
+          <span className="online-dot" />
+          Asistente conectado a tu catálogo
+        </p>
+      </div>
+    </div>
+
+    <button
+      type="button"
+      className="chat-new-button"
+      onClick={nuevoChat}
+      disabled={enviandoChat}
+    >
+      + Nuevo chat
+    </button>
+  </div>
+
+  <div
+    className="chat-messages"
+    aria-live="polite"
+    aria-label="Conversación con GAMERS AI"
+  >
+    {mensajesChat.length === 0 && (
+      <div className="chat-welcome">
+        <div className="chat-welcome-icon">🎮</div>
+        <h3>¡Hola, gamer!</h3>
+        <p>
+          Soy GAMERS AI. Puedo ayudarte a consultar tu inventario,
+          conocer los precios y encontrar videojuegos por género
+          o plataforma.
+        </p>
+
+        <div className="chat-suggestions">
+          <button
+            type="button"
+            onClick={() =>
+              setEntradaChat("¿Qué videojuegos tenemos disponibles?")
+            }
+          >
+            🎮 Ver videojuegos
+          </button>
+
+          <button
+            type="button"
+            onClick={() =>
+              setEntradaChat("¿Cuáles son los juegos de aventura?")
+            }
+          >
+            🗺️ Juegos de aventura
+          </button>
+
+          <button
+            type="button"
+            onClick={() =>
+              setEntradaChat("¿Cuál es el valor total del inventario?")
+            }
+          >
+            💰 Valor del inventario
+          </button>
+        </div>
+      </div>
+    )}
+
+    {mensajesChat.map((mensaje, indice) => (
+      <div
+        key={`${indice}-${mensaje.role}`}
+        className={`chat-message ${
+          mensaje.role === "user" ? "user-message" : "ai-message"
+        }`}
+      >
+        {mensaje.role === "assistant" && (
+          <div className="message-avatar">✦</div>
+        )}
+
+        <div className="message-bubble">
+          <span className="message-author">
+            {mensaje.role === "user" ? "Tú" : "GAMERS AI"}
+          </span>
+          <p>{mensaje.content}</p>
+        </div>
+
+        {mensaje.role === "user" && (
+          <div className="message-avatar user-avatar">T</div>
+        )}
+      </div>
+    ))}
+
+    {enviandoChat && (
+      <div className="chat-message ai-message">
+        <div className="message-avatar">✦</div>
+        <div className="message-bubble typing-bubble">
+          <span className="message-author">GAMERS AI</span>
+          <p>Preparando respuesta...</p>
+          <div className="typing-dots">
+            <span />
+            <span />
+            <span />
+          </div>
+        </div>
+      </div>
+    )}
+
+    {errorChat && (
+      <div className="chat-error" role="alert">
+        <p>{errorChat}</p>
+        <button
+          type="button"
+          onClick={() => setEntradaChat(
+            "Ayúdame a consultar el inventario de videojuegos."
+          )}
+        >
+          Intentar otra pregunta
+        </button>
+      </div>
+    )}
+  </div>
+
+  <form className="chat-input-area" onSubmit={enviarMensaje}>
+    <input
+      aria-label="Escribe tu mensaje"
+      value={entradaChat}
+      onChange={(e) => setEntradaChat(e.target.value)}
+      placeholder="Pregúntame sobre tus videojuegos..."
+      maxLength={1000}
+      disabled={enviandoChat}
+    />
+
+    <button
+      type="submit"
+      className="chat-send-button"
+      disabled={enviandoChat || !entradaChat.trim()}
+      aria-label="Enviar mensaje"
+      title="Enviar mensaje"
+    >
+      ➤
+    </button>
+  </form>
+
+  <p className="chat-disclaimer">
+    GAMERS AI puede cometer errores. Verifica los datos importantes.
+  </p>
+</section>
+
 
       <section className="content-grid">
         <article className="panel form-panel">
