@@ -91,6 +91,50 @@ function App() {
     }
   }
 
+    // Consultar al Asistente Cloud con IA.
+  async function consultarAsistente(e) {
+    e.preventDefault();
+
+    const pregunta = preguntaIA.trim();
+
+    if (!pregunta || consultandoIA) return;
+
+    setConsultandoIA(true);
+    setRespuestaIA("");
+    setErrorIA("");
+
+    try {
+      const respuesta = await fetch(
+        "https://gamers-cloud.onrender.com/api/asistente",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ pregunta }),
+        }
+      );
+
+      const resultado = await respuesta.json();
+
+      if (!respuesta.ok || !resultado.ok) {
+        throw new Error(
+          resultado.mensaje ||
+            "No se pudo obtener una respuesta del asistente."
+        );
+      }
+
+      setRespuestaIA(resultado.respuesta);
+    } catch (error) {
+      setErrorIA(
+        error.message ||
+          "No se pudo conectar con el asistente. Inténtalo nuevamente."
+      );
+    } finally {
+      setConsultandoIA(false);
+    }
+  }
+
   function cerrarSesion() {
     setSesion(false);
     setUsuario("");

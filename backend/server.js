@@ -8,6 +8,7 @@ const Groq = require("groq-sdk");
 const app = express();
 const PORT = process.env.PORT || 3000;
 const APPS_SCRIPT_URL = process.env.APPS_SCRIPT_URL;
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 
 app.use(
   cors({
@@ -290,3 +291,4 @@ app.post("/api/asistente", manejarChat);
 app.listen(PORT, () => {
   console.log(`GAMERS CLOUD API iniciada en el puerto ${PORT}`);
 });
+
